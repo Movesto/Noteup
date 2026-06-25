@@ -1,0 +1,17 @@
+# Never copy the host's installed dependencies or build output into the image.
+# The host node_modules contains platform-specific native binaries (glibc) that
+# break the Alpine (musl) image when COPY . . overwrites the freshly installed
+# node_modules from the deps stage.
+node_modules
+build
+.cache
+
+# Dev / VCS noise
+.git
+.gitignore
+Dockerfile
+Dockerfile.dev
+.dockerignore
+npm-debug.log*
+.env
+.env.*

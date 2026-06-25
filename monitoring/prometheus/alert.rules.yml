@@ -1,0 +1,45 @@
+groups:
+  - name: amor-api
+    interval: 30s
+    rules:
+      - alert: HighErrorRate
+        expr: |
+          sum(rate(http_requests_total{status_code=~"5.."}[5m]))
+          /
+          sum(rate(http_requests_total[5m])) > 0.05
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "High 5xx error rate ({{ $value | humanizePercentage }})"
+          description: "More than 5% of requests are returning 5xx errors over the last 5 minutes."
+
+      - alert: HighLatencyP95
+        expr: |
+          histogram_quantile(0.95,
+            sum by(le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 2
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "P95 latency above 2s ({{ $value | humanizeDuration }})"
+          description: "The 95th percentile response time has exceeded 2 seconds for 5 minutes."
+
+      - alert: BackendDown
+        expr: up{job="fastapi-backend"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Backend is unreachable"
+          description: "Prometheus cannot scrape the FastAPI backend /metrics endpoint."
+
+      - alert: NoRequestsReceived
+        expr: sum(rate(http_requests_total[10m])) == 0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "No traffic in the last 10 minutes"
+          description: "The API has received zero requests in the last 10 minutes — may indicate a routing or upstream issue."

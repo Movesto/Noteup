@@ -1,0 +1,19 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+sqlmodel==0.0.38
+sqlalchemy[asyncio]==2.0.36
+alembic==1.14.0
+asyncpg==0.30.0
+strawberry-graphql[fastapi]==0.316.0
+python-multipart==0.0.17
+bcrypt==5.0.0
+email-validator==2.2.0
+python-jose[cryptography]==3.3.0
+prometheus-fastapi-instrumentator==7.0.0
+markdown==3.7
+pypdf==5.1.0
+# PDF OCR (opt-in import path): page rendering + Tesseract bindings. The
+# Tesseract engine itself and its language data are installed in the Dockerfile.
+pymupdf==1.27.2.3
+pytesseract==0.3.13
+pillow==11.0.0

@@ -1,0 +1,88 @@
+"""Date with time (isoformat)"""
+scalar DateTime
+
+type FolderType {
+  id: ID!
+  name: String!
+  parentId: ID
+  deletedAt: DateTime
+}
+
+type GraphData {
+  nodes: [GraphNode!]!
+  links: [GraphEdge!]!
+}
+
+type GraphEdge {
+  source: ID!
+  target: ID!
+  edgeType: String!
+}
+
+type GraphNode {
+  id: ID!
+  name: String!
+  nodeType: String!
+  val: Int!
+}
+
+type Mutation {
+  createNote(title: String!, content: String! = "", aliases: [String!] = null, folderId: ID = null): NoteType!
+  updateNote(id: ID!, title: String = null, content: String = null, aliases: [String!] = null, coverUrl: String): NoteType
+  moveNote(id: ID!, folderId: ID = null): NoteType
+  deleteNote(id: ID!): Boolean!
+  deleteNotes(ids: [ID!]!): Int!
+  restoreNotes(ids: [ID!]!): Int!
+  purgeNotes(ids: [ID!]!): Int!
+  createFolder(name: String!, parentId: ID = null): FolderType!
+  renameFolder(id: ID!, name: String!): FolderType
+  moveFolder(id: ID!, parentId: ID = null): FolderType
+  deleteFolder(id: ID!): Boolean!
+  deleteFolders(ids: [ID!]!): Int!
+  restoreFolders(ids: [ID!]!): Int!
+  purgeFolders(ids: [ID!]!): Int!
+  emptyTrash: Boolean!
+}
+
+type NoteStub {
+  id: ID!
+  title: String!
+  aliases: [String!]!
+}
+
+type NoteType {
+  id: ID!
+  title: String!
+  content: String!
+  aliases: [String!]!
+  folderId: ID
+  coverUrl: String
+  deletedAt: DateTime
+  createdAt: DateTime!
+  updatedAt: DateTime!
+}
+
+type Query {
+  noteStubs: [NoteStub!]!
+  backlinks(id: ID!): [NoteType!]!
+  notes: [NoteType!]!
+  note(id: ID!): NoteType
+  folders: [FolderType!]!
+  search(keyword: String!): [SearchResult!]!
+  orphans: [NoteType!]!
+  graphData: GraphData!
+  folderGraph(id: ID!): GraphData
+  trash: TrashData!
+  noteByTitle(title: String!): NoteType
+}
+
+type SearchResult {
+  noteId: ID!
+  noteTitle: String!
+  sentences: [String!]!
+}
+
+type TrashData {
+  notes: [NoteType!]!
+  folders: [FolderType!]!
+}

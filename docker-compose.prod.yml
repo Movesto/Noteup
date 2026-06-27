@@ -1,0 +1,77 @@
+# Production stack for a single VM (e.g. Oracle Cloud) fronted by Cloudflare.
+#
+# Traffic path:  browser ──HTTPS──> Cloudflare ──tunnel──> cloudflared ──> frontend:3000 ──> backend:8000 ──> db
+#
+# Nothing publishes a host port: the Cloudflare Tunnel (cloudflared) makes an
+# OUTBOUND connection to Cloudflare, so the VM needs no inbound ports open and
+# the database/backend/monitoring never touch the public internet.
+#
+# Usage:
+#   cp .env.prod.example .env   # then fill in real secrets
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# See DEPLOY.md for the full Oracle + Cloudflare walkthrough.
+
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER:-amor}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD must be set in .env}
+      POSTGRES_DB: ${DB_NAME:-amor_db}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-amor} -d ${DB_NAME:-amor_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: always
+    environment:
+      ENV: production
+      DATABASE_URL: postgresql+asyncpg://${DB_USER:-amor}:${DB_PASSWORD:?DB_PASSWORD must be set}@db:5432/${DB_NAME:-amor_db}
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
+      # Backend is only reached server-side by the frontend over the internal
+      # network, so CORS is mostly moot; set it to your domain anyway.
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://example.com}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8000/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      NODE_ENV: production
+      BACKEND_URL: http://backend:8000
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
+      UNSPLASH_ACCESS_KEY: ${UNSPLASH_ACCESS_KEY:-}
+    depends_on:
+      - backend
+
+  # Cloudflare Tunnel — publishes the frontend to your domain with no open ports.
+  # Create the tunnel in the Cloudflare Zero Trust dashboard, point its public
+  # hostname at  http://frontend:3000 , and paste the token into .env.
+  cloudflared:
+    image: cloudflare/cloudflared:2024.10.0
+    restart: always
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?CLOUDFLARE_TUNNEL_TOKEN must be set in .env}
+    depends_on:
+      - frontend
+
+volumes:
+  postgres_data:

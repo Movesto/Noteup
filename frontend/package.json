@@ -15,7 +15,6 @@
     "@remix-run/node": "^2.15.0",
     "@remix-run/react": "^2.15.0",
     "@remix-run/serve": "^2.15.0",
-    "graphql": "^16.9.0",
     "@tiptap/extension-font-family": "^2.10.0",
     "@tiptap/extension-highlight": "^2.10.0",
     "@tiptap/extension-image": "^2.10.0",
@@ -30,10 +29,10 @@
     "@tiptap/pm": "^2.10.0",
     "@tiptap/react": "^2.10.0",
     "@tiptap/starter-kit": "^2.10.0",
+    "graphql": "^16.9.0",
     "isbot": "^4.4.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-force-graph": "^1.48.2",
     "react-force-graph-2d": "^1.29.1"
   },
   "devDependencies": {

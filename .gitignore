@@ -15,15 +15,7 @@ build/
 .env
 .env.*
 !.env.example
-terraform.tfvars
-
-# Terraform
-.terraform/
-.terraform.lock.hcl
-*.tfstate
-*.tfstate.backup
-*.tfplan
-crash.log
+!.env.prod.example
 
 # OS
 .DS_Store

@@ -37,7 +37,7 @@ services:
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET must be set in .env}
       # Backend is only reached server-side by the frontend over the internal
       # network, so CORS is mostly moot; set it to your domain anyway.
-      CORS_ORIGINS: ${CORS_ORIGINS:-https://example.com}
+      CORS_ORIGINS: ${CORS_ORIGINS:-https://notesapp.uk}
     depends_on:
       db:
         condition: service_healthy

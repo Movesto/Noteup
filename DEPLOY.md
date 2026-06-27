@@ -46,7 +46,7 @@ openssl rand -hex 32   # run twice, use for JWT_SECRET and SESSION_SECRET
 
 - `DB_PASSWORD` – a strong password
 - `JWT_SECRET`, `SESSION_SECRET` – the random strings above
-- `CORS_ORIGINS` – `https://your-domain.com`
+- `CORS_ORIGINS` – `https://notesapp.uk`
 - `CLOUDFLARE_TUNNEL_TOKEN` – from step 4
 - `UNSPLASH_ACCESS_KEY` – optional (cover images)
 
@@ -58,7 +58,7 @@ In the Cloudflare dashboard → **Zero Trust → Networks → Tunnels → Create
    and paste it into `.env` as `CLOUDFLARE_TUNNEL_TOKEN`. (Ignore the install
    commands — our compose runs cloudflared for you.)
 3. Open the **Public Hostname** tab → **Add a public hostname**:
-   - **Subdomain/Domain:** your domain (e.g. `noteup.your-domain.com` or the root)
+   - **Domain:** `notesapp.uk` (leave Subdomain blank to use the root; or set e.g. `www`)
    - **Service Type:** `HTTP`
    - **URL:** `frontend:3000`
    - Save.
@@ -79,7 +79,7 @@ docker compose -f docker-compose.prod.yml ps
 docker compose -f docker-compose.prod.yml logs -f cloudflared   # should say "Registered tunnel connection"
 ```
 
-Visit `https://your-domain.com`. **The first account you register becomes the
+Visit `https://notesapp.uk`. **The first account you register becomes the
 owner** — register yours immediately.
 
 ## 6. Updating

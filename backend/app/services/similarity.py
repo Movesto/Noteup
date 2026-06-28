@@ -47,7 +47,11 @@ _STOPWORDS = frozenset(
 
 
 def _tokens(note) -> List[str]:
-    text = f"{note.title or ''} {_strip_html(note.content or '')}"
+    # The home-page graph passes lightweight rows without a body (content not
+    # loaded — see graph.fetch_graph), so fall back to title-only text there.
+    # The folder view still passes full notes, so this stays content-aware.
+    content = getattr(note, "content", "") or ""
+    text = f"{note.title or ''} {_strip_html(content)}"
     return [
         t
         for t in _TOKEN_RE.findall(_normalize(text))

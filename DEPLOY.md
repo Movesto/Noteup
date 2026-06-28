@@ -113,3 +113,5 @@ Restore: `gunzip -c backup.sql.gz | docker compose -f docker-compose.prod.yml ex
 
 > Security headers (CSP/HSTS/etc.) are best added as Cloudflare **Transform
 > Rules → Modify Response Header** so they apply at the edge without touching app code.
+ssh -i REDACTED-KEY-PATH ubuntu@REDACTED-IP
+

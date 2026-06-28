@@ -37,9 +37,15 @@ async def fetch_graph(
     sees their own rows, an anonymous caller sees only unowned (``user_id IS
     NULL``) rows — never every user's data.
     """
-    note_q = scope_listing(select(Note), Note, user_id)
+    # Only load what the graph needs — id/title/folder for nodes and structural
+    # edges, plus titles for similarity. NOT the full note body: once images are
+    # embedded as base64 data URIs a note can be several MB, and loading every
+    # note's content here made the home-page graph take ~45s for a few hundred
+    # image-heavy notes. Similarity falls back to title-level text (see
+    # similarity._tokens), which is cheap and keeps the page fast.
+    note_q = scope_listing(select(Note.id, Note.title, Note.folder_id), Note, user_id)
     folder_q = scope_listing(select(Folder), Folder, user_id)
-    notes = (await session.execute(note_q)).scalars().all()
+    notes = (await session.execute(note_q)).all()
     folders = (await session.execute(folder_q)).scalars().all()
 
     note_ids = {n.id for n in notes}

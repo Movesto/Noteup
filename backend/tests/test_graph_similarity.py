@@ -45,11 +45,13 @@ QUERY = "{ graphData { links { source target edgeType } } }"
 
 
 async def test_similar_topic_edge_is_emitted(session_factory):
+    # The home graph computes similarity from TITLES — note bodies aren't loaded
+    # for the graph (see graph.fetch_graph), so titles carry the topical signal.
     a, b, c = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
     uid = await _seed(session_factory, [
-        (a, "Tawhid", "tawhid is the oneness of God, the core of faith"),
-        (b, "Oneness", "the oneness of God, tawhid, is the heart of faith"),
-        (c, "Sourdough", "bake sourdough bread with flour, water and salt"),
+        (a, "Tawhid and the Oneness of God", "body text is ignored by the graph"),
+        (b, "The Oneness of God in Tawhid", "body text is ignored by the graph"),
+        (c, "Sourdough bread baking", "body text is ignored by the graph"),
     ])
     similar = _edge_set(await _run(QUERY, uid), "similar")
     assert frozenset((str(a), str(b))) in similar

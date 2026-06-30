@@ -91,11 +91,12 @@ def note_to_gql(note: Note) -> NoteType:
         id=strawberry.ID(str(note.id)),
         title=note.title,
         # Listing queries (e.g. the sidebar `notes` field) load rows without the
-        # body for speed; tolerate its absence rather than forcing a content load.
+        # heavy columns (content, cover_url — both can be multi-MB base64) for
+        # speed; tolerate their absence rather than forcing those loads.
         content=getattr(note, "content", "") or "",
-        aliases=note.aliases or [],
+        aliases=getattr(note, "aliases", None) or [],
         folder_id=strawberry.ID(str(note.folder_id)) if note.folder_id else None,
-        cover_url=note.cover_url,
+        cover_url=getattr(note, "cover_url", None),
         deleted_at=note.deleted_at,
         created_at=note.created_at,
         updated_at=note.updated_at,

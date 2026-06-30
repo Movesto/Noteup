@@ -54,9 +54,22 @@ async def sync_links(
             linked.add(target_id)
 
 
-async def list_notes(session: AsyncSession, user_id) -> Sequence[Note]:
-    q = scope_listing(select(Note).order_by(Note.created_at.desc()), Note, user_id)
-    return (await session.execute(q)).scalars().all()
+async def list_notes(session: AsyncSession, user_id):
+    """Note metadata for the `notes` field (sidebar tree), newest first.
+
+    Selects every column EXCEPT ``content``: the body can be several MB once
+    images are embedded as base64 data URIs, and the sidebar runs this on every
+    navigation — loading it made each page change read ~100 MB. ``note_to_gql``
+    tolerates the absent body (returns an empty string).
+    """
+    q = scope_listing(
+        select(
+            Note.id, Note.title, Note.aliases, Note.folder_id, Note.cover_url,
+            Note.deleted_at, Note.created_at, Note.updated_at,
+        ).order_by(Note.created_at.desc()),
+        Note, user_id,
+    )
+    return (await session.execute(q)).all()
 
 
 async def list_note_stubs(session: AsyncSession, user_id):

@@ -2,6 +2,7 @@ import { type ActionFunctionArgs, type LoaderFunctionArgs, json, redirect } from
 import { Form, useLoaderData, useNavigation } from "@remix-run/react";
 import { createNote } from "~/lib/api/notes.server";
 import { requireAuth } from "~/lib/session.server";
+import { FolderIcon } from "~/components/icons";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   await requireAuth(request);
@@ -41,7 +42,7 @@ export default function NewNote() {
       <h1 className="text-2xl font-bold text-notion-text mb-1">New Page</h1>
       {folderName ? (
         <p className="text-[13px] text-notion-faint mb-8">
-          Creating in <span className="text-emerald-500">📁 {folderName}</span>
+          Creating in <span className="inline-flex items-center gap-1.5 text-emerald-500"><FolderIcon className="w-3.5 h-3.5" />{folderName}</span>
         </p>
       ) : (
         <p className="text-[13px] text-notion-faint mb-8">

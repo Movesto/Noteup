@@ -7,6 +7,7 @@ import { Link, useLoaderData, useFetcher, useRevalidator, useNavigate } from "@r
 import { useEffect, useRef, useState } from "react";
 import { TipTapEditor } from "~/components/Editor/TipTapEditor";
 import { CoverPicker, type UnsplashPhoto } from "~/components/CoverPicker";
+import { FolderIcon } from "~/components/icons";
 import { listFolders } from "~/lib/api/folders.server";
 import {
   deleteNote,
@@ -311,7 +312,7 @@ export default function NotePage() {
             className="flex items-center gap-1 text-[12px] text-notion-faint hover:text-notion-muted transition-colors"
           >
             {currentFolder ? (
-              <><span>📁</span><span>{currentFolder.name}</span></>
+              <><FolderIcon className="w-3.5 h-3.5" /><span>{currentFolder.name}</span></>
             ) : (
               <span>+ Add to folder</span>
             )}
@@ -343,7 +344,7 @@ export default function NotePage() {
                   }`}
                   style={{ paddingLeft: 12 + depth * 12 }}
                 >
-                  📁 {folder.name}
+                  <span className="inline-flex items-center gap-1.5"><FolderIcon className="w-3.5 h-3.5 shrink-0" />{folder.name}</span>
                 </button>
               ))}
             </div>

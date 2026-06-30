@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { NoteGraph, type GraphNode } from "~/components/NoteGraph";
 import { getFolderGraph } from "~/lib/api/graph.server";
 import { requireAuth } from "~/lib/session.server";
+import { FolderIcon } from "~/components/icons";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -76,7 +77,7 @@ export default function FolderPage() {
           ←
         </button>
         <div className="flex items-center gap-2 flex-1 min-w-0">
-          <span className="text-base">📁</span>
+          <FolderIcon className="w-4 h-4 shrink-0 text-notion-muted" />
           <span className="text-[14px] font-semibold text-notion-text truncate">
             {folderName}
           </span>

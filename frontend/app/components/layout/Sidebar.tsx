@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { SearchBar } from "~/components/SearchBar";
 import { FolderTree, SidebarTreeProvider, type SidebarTreeValue } from "~/components/layout/SidebarTree";
 import type { Folder, SidebarNote } from "~/types";
+import { TrashIcon } from "~/components/icons";
 
 interface Props {
   notes: SidebarNote[];
@@ -358,7 +359,7 @@ export function Sidebar({ notes, folders, email, open, imeEnabled, onToggleIme }
             disabled={selectedCount === 0}
             className="w-full flex items-center justify-center gap-2 px-2 py-1.5 rounded-md text-[12px] bg-red-900/40 text-red-300 hover:bg-red-900/60 transition-colors disabled:opacity-40 disabled:hover:bg-red-900/40"
           >
-            🗑️ Move {selectedCount > 0 ? `${selectedCount} ` : ""}to trash
+            <TrashIcon className="w-3.5 h-3.5" /> Move {selectedCount > 0 ? `${selectedCount} ` : ""}to trash
           </button>
         </div>
       )}

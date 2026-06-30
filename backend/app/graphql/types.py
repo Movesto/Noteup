@@ -90,7 +90,9 @@ def note_to_gql(note: Note) -> NoteType:
     return NoteType(
         id=strawberry.ID(str(note.id)),
         title=note.title,
-        content=note.content,
+        # Listing queries (e.g. the sidebar `notes` field) load rows without the
+        # body for speed; tolerate its absence rather than forcing a content load.
+        content=getattr(note, "content", "") or "",
         aliases=note.aliases or [],
         folder_id=strawberry.ID(str(note.folder_id)) if note.folder_id else None,
         cover_url=note.cover_url,

@@ -1,9 +1,10 @@
 import { type LoaderFunctionArgs, json } from "@remix-run/node";
 import { useFetcher, useLoaderData, useRevalidator } from "@remix-run/react";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { getTrash } from "~/lib/api/trash.server";
 import { requireAuth } from "~/lib/session.server";
 import type { TrashFolder, TrashNote } from "~/types";
+import { FileIcon, FolderIcon, TrashIcon } from "~/components/icons";
 
 export async function loader({ request }: LoaderFunctionArgs) {
   const { token } = await requireAuth(request);
@@ -74,7 +75,7 @@ export default function Trash() {
     <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-[20px] font-semibold text-notion-text flex items-center gap-2">
-          <span>🗑️</span> Trash
+<TrashIcon className="w-5 h-5" /> Trash
         </h1>
         {!empty && (
           <button
@@ -133,7 +134,7 @@ export default function Trash() {
             {folders.map((f) => (
               <TrashRow
                 key={f.id}
-                icon="📁"
+                icon={<FolderIcon className="w-3.5 h-3.5" />}
                 label={f.name}
                 hint="folder · contents included"
                 checked={sel.folders.has(f.id)}
@@ -145,7 +146,7 @@ export default function Trash() {
             {notes.map((n) => (
               <TrashRow
                 key={n.id}
-                icon="■"
+                icon={<FileIcon className="w-3.5 h-3.5" />}
                 label={n.title || "Untitled"}
                 hint="note"
                 checked={sel.notes.has(n.id)}
@@ -164,7 +165,7 @@ export default function Trash() {
 function TrashRow({
   icon, label, hint, checked, onToggle, onRestore, onPurge,
 }: {
-  icon: string;
+  icon: ReactNode;
   label: string;
   hint: string;
   checked: boolean;
@@ -175,7 +176,7 @@ function TrashRow({
   return (
     <li className="group flex items-center gap-3 px-3 py-2 hover:bg-notion-hover transition-colors">
       <input type="checkbox" checked={checked} onChange={onToggle} className="accent-emerald-600 shrink-0" />
-      <span className="text-[12px] text-notion-faint shrink-0 w-4 text-center">{icon}</span>
+      <span className="text-notion-faint shrink-0 w-4 inline-flex items-center justify-center">{icon}</span>
       <span className="flex-1 text-[13px] text-notion-text truncate">{label}</span>
       <span className="text-[11px] text-notion-faint shrink-0">{hint}</span>
       <div className="flex items-center gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">

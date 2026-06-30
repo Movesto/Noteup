@@ -73,8 +73,13 @@ async def fetch_folder_graph(
     if not folder:
         return None
 
-    note_q = scope_listing(select(Note).where(Note.folder_id == folder_uuid), Note, user_id)
-    folder_notes = (await session.execute(note_q)).scalars().all()
+    # Only id/title/folder_id are needed for nodes + title-based similarity — not
+    # the (possibly multi-MB, base64-image) body. See fetch_graph for the rationale.
+    note_q = scope_listing(
+        select(Note.id, Note.title, Note.folder_id).where(Note.folder_id == folder_uuid),
+        Note, user_id,
+    )
+    folder_notes = (await session.execute(note_q)).all()
     folder_note_ids = {n.id for n in folder_notes}
 
     subfolder_q = scope_listing(
@@ -102,9 +107,12 @@ async def fetch_folder_graph(
     external_notes: List[Note] = []
     if external_ids:
         external_q = scope_listing(
-            select(Note).where(Note.id.in_(list(external_ids))), Note, user_id
+            select(Note.id, Note.title, Note.folder_id).where(
+                Note.id.in_(list(external_ids))
+            ),
+            Note, user_id,
         )
-        external_notes = (await session.execute(external_q)).scalars().all()
+        external_notes = (await session.execute(external_q)).all()
 
     # The folders those external notes live in (excluding this folder and its
     # subfolders, which are already shown) are the "related" folders.

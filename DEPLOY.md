@@ -113,5 +113,24 @@ Restore: `gunzip -c backup.sql.gz | docker compose -f docker-compose.prod.yml ex
 
 > Security headers (CSP/HSTS/etc.) are best added as Cloudflare **Transform
 > Rules → Modify Response Header** so they apply at the edge without touching app code.
+
+## 9. Monitoring performance (no load on the VM)
+
+The full Prometheus/Grafana stack is too heavy for a 1 GB VM, so monitoring is done
+entirely through Cloudflare (free, zero server cost):
+
+- **Web Analytics** — real page-load times and Core Web Vitals per page, so you can see
+  *which* pages are slow for real visitors. Enable in the Cloudflare dashboard →
+  **Analytics & Logs → Web Analytics → Add a site**, and (for this proxied/tunneled site)
+  turn on **automatic setup** so Cloudflare injects the beacon for you. If automatic
+  injection isn't offered, add the one-line beacon `<script>` it shows to
+  `frontend/app/root.tsx` just before `<Scripts />` and redeploy.
+- **Errors & timeouts** — Cloudflare dashboard → **Analytics & Logs → Traffic**: watch for
+  **5xx / 524** responses. A spike in 524s means a request took longer than Cloudflare's
+  100-second edge limit (usually a heavy loader/import) — the signal that something is slow
+  server-side.
+- **Live server resources (on demand)** — when diagnosing, SSH in and run
+  `docker stats --no-stream` (per-container CPU/RAM) and `free -h` (RAM/swap). High swap
+  use means the VM is memory-starved — the cue to move to the free Ampere A1.
 ssh -i REDACTED-KEY-PATH ubuntu@REDACTED-IP
 

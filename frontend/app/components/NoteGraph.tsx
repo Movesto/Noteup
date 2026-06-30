@@ -179,20 +179,20 @@ export function NoteGraph({ nodes, links, onNodeClick }: Props) {
     const isDimmed = hasFocus && !nodeInFocus(node.id as string);
     const color = isDimmed ? "#2a2a2a" : (NODE_COLOR[nodeType] ?? "#34d399");
     const glowColor = isDimmed ? null : GLOW[nodeType];
+    const isFocused = hasFocus && !isDimmed;
 
-    if (glowColor) {
-      // Outer diffuse halo
-      const grad = ctx.createRadialGradient(x, y, r * 0.5, x, y, r * 4);
-      grad.addColorStop(0, `${glowColor}50`);
-      grad.addColorStop(1, `${glowColor}00`);
-      ctx.beginPath();
-      ctx.arc(x, y, r * 4, 0, 2 * Math.PI);
-      ctx.fillStyle = grad;
-      ctx.fill();
-
-      // Inner intense glow
+    // The glow is the dominant per-frame cost with hundreds of nodes: a radial
+    // gradient + shadowBlur on every node every frame froze weak devices. Now
+    // the expensive shadowBlur is reserved for highlighted nodes while hovering;
+    // at rest each node draws just a cheap faint halo disc (no gradient/shadow).
+    if (glowColor && isFocused) {
       ctx.shadowColor = glowColor;
-      ctx.shadowBlur = 20;
+      ctx.shadowBlur = 16;
+    } else if (glowColor) {
+      ctx.beginPath();
+      ctx.arc(x, y, r * 1.8, 0, 2 * Math.PI);
+      ctx.fillStyle = `${glowColor}22`;
+      ctx.fill();
     }
 
     // Core circle
@@ -340,7 +340,9 @@ export function NoteGraph({ nodes, links, onNodeClick }: Props) {
           // brighten + thicken of its edges (and dimming of the rest) above —
           // no moving dots to chase or click through.
           linkDirectionalParticles={0}
-          warmupTicks={100}
+          // Fewer synchronous warmup ticks so a large graph doesn't block the
+          // main thread on mount; the remaining cooldown ticks settle it visibly.
+          warmupTicks={30}
           cooldownTicks={50}
           onNodeHover={handleNodeHover}
           onNodeClick={handleNodeClick}

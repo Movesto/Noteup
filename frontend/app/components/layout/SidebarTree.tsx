@@ -2,6 +2,7 @@ import { createContext, useContext } from "react";
 import { NavLink } from "@remix-run/react";
 import type { useNavigate } from "@remix-run/react";
 import type { Folder, SidebarNote } from "~/types";
+import { FileIcon, FolderIcon, PencilIcon, TrashIcon } from "~/components/icons";
 
 type NavigateFn = ReturnType<typeof useNavigate>;
 
@@ -126,7 +127,7 @@ function NoteItem({ note, depth = 0 }: { note: SidebarNote; depth?: number }) {
         }}
         className="hidden group-hover:flex items-center justify-center w-5 h-5 mr-1 shrink-0 rounded text-notion-faint hover:text-red-400 hover:bg-notion-border transition-colors text-[10px]"
       >
-        ✕
+        <TrashIcon className="w-3 h-3" />
       </button>
     </div>
   );
@@ -208,7 +209,7 @@ function FolderNode({ folder, depth }: { folder: Folder; depth: number }) {
         )}
 
         {/* Folder icon */}
-        <span className="text-[12px] shrink-0">📁</span>
+        <FolderIcon className="w-3.5 h-3.5 shrink-0 text-notion-faint" />
 
         {/* Name (or rename input) */}
         {isRenaming ? (
@@ -248,7 +249,7 @@ function FolderNode({ folder, depth }: { folder: Folder; depth: number }) {
               }}
               className="w-5 h-5 flex items-center justify-center rounded text-notion-faint hover:text-notion-text hover:bg-notion-border transition-colors text-[10px]"
             >
-              📄
+              <FileIcon className="w-3 h-3" />
             </button>
             {/* Add subfolder */}
             <button
@@ -272,7 +273,7 @@ function FolderNode({ folder, depth }: { folder: Folder; depth: number }) {
               }}
               className="w-5 h-5 flex items-center justify-center rounded text-notion-faint hover:text-notion-text hover:bg-notion-border transition-colors text-[10px]"
             >
-              ✎
+              <PencilIcon className="w-3 h-3" />
             </button>
             {/* Delete */}
             <button
@@ -286,7 +287,7 @@ function FolderNode({ folder, depth }: { folder: Folder; depth: number }) {
               }}
               className="w-5 h-5 flex items-center justify-center rounded text-notion-faint hover:text-red-400 hover:bg-notion-border transition-colors text-[10px]"
             >
-              ✕
+              <TrashIcon className="w-3 h-3" />
             </button>
           </div>
         )}
@@ -295,7 +296,7 @@ function FolderNode({ folder, depth }: { folder: Folder; depth: number }) {
       {/* Inline new-subfolder input */}
       {t.creatingFolder === folder.id && (
         <div className="flex items-center gap-1 py-1" style={{ paddingLeft: pl + 20 }}>
-          <span className="text-[12px] shrink-0">📁</span>
+          <FolderIcon className="w-3.5 h-3.5 shrink-0 text-notion-faint" />
           <input
             ref={t.newFolderInputRef}
             defaultValue=""
@@ -362,7 +363,7 @@ export function FolderTree() {
       {/* New root folder input */}
       {t.creatingFolder === "root" && (
         <div className="flex items-center gap-1 py-1 px-2 mb-1">
-          <span className="text-[12px] shrink-0">📁</span>
+          <FolderIcon className="w-3.5 h-3.5 shrink-0 text-notion-faint" />
           <input
             ref={t.newFolderInputRef}
             defaultValue=""

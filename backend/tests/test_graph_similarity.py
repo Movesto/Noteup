@@ -109,10 +109,12 @@ async def _seed_folder(session_factory, folder_id, notes, links=()):
 async def test_folder_graph_emits_similar_edge_between_folder_notes(session_factory):
     folder = uuid.uuid4()
     a, b, c = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    # Folder-graph similarity is title-based too (bodies aren't loaded — see
+    # graph.fetch_folder_graph), so titles carry the topical signal.
     uid = await _seed_folder(session_factory, folder, [
-        (a, "Tawhid", "tawhid is the oneness of God, the core of faith"),
-        (b, "Oneness", "the oneness of God, tawhid, is the heart of faith"),
-        (c, "Sourdough", "bake sourdough bread with flour, water and salt"),
+        (a, "Tawhid and the Oneness of God", "body text is ignored by the graph"),
+        (b, "The Oneness of God in Tawhid", "body text is ignored by the graph"),
+        (c, "Sourdough bread baking", "body text is ignored by the graph"),
     ])
     similar = _links_edge_set(await _folder_graph(folder, uid), "similar")
     assert frozenset((str(a), str(b))) in similar

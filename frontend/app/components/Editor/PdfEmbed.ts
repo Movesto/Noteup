@@ -58,7 +58,16 @@ export const PdfEmbed = Node.create({
 
       const label = document.createElement("span");
       label.className = "pdf-embed-name";
-      label.textContent = `📄 ${name}`;
+      // Inline SVG file icon (renders consistently across browsers, unlike the
+      // 📄 emoji). Static markup only; the filename is appended as a text node.
+      label.innerHTML =
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" ' +
+        'stroke="currentColor" stroke-width="1.8" style="vertical-align:-2px">' +
+        '<path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 ' +
+        '3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 ' +
+        '0-3.375-3.375H8.25m1.5 12H15m-6-3h6m3 .75a9 9 0 0 1-9 9 9 9 0 0 1-9-9 9 9 0 0 1 ' +
+        '9-9h2.25l5.25 5.25v3.75z"/></svg> ';
+      label.appendChild(document.createTextNode(name));
 
       const actions = document.createElement("span");
       actions.className = "pdf-embed-actions";

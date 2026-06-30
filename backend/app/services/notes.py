@@ -57,14 +57,15 @@ async def sync_links(
 async def list_notes(session: AsyncSession, user_id):
     """Note metadata for the `notes` field (sidebar tree), newest first.
 
-    Selects every column EXCEPT ``content``: the body can be several MB once
-    images are embedded as base64 data URIs, and the sidebar runs this on every
-    navigation — loading it made each page change read ~100 MB. ``note_to_gql``
-    tolerates the absent body (returns an empty string).
+    Loads only the small columns the sidebar tree needs. It deliberately omits
+    BOTH ``content`` and ``cover_url``: each can be a multi-MB base64 data URI
+    once images are embedded, and the sidebar runs this on every navigation —
+    loading them made each page change read ~130 MB. ``note_to_gql`` tolerates
+    the absent columns.
     """
     q = scope_listing(
         select(
-            Note.id, Note.title, Note.aliases, Note.folder_id, Note.cover_url,
+            Note.id, Note.title, Note.folder_id,
             Note.deleted_at, Note.created_at, Note.updated_at,
         ).order_by(Note.created_at.desc()),
         Note, user_id,

@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ArabicIME } from "./ArabicIME";
 import { DirExtension } from "./DirExtension";
 import { PdfEmbed } from "./PdfEmbed";
+import { ArabicKeyboard } from "./ArabicKeyboard";
 import { HighlightExtension } from "./HighlightExt";
 import { WikiLink, wrapWikiLinks } from "./WikiLink";
 import { WikiSuggest } from "./WikiSuggest";
@@ -635,6 +636,9 @@ export function TipTapEditor({ content, onChange }: Props) {
           onMouseLeave={() => setPreview(null)}
         />
       )}
+
+      {/* ── On-screen Arabic keyboard (desktop, while IME is on) ──────────── */}
+      {arabicEnabled && <ArabicKeyboard onInsert={insertGlyph} />}
     </div>
   );
 }

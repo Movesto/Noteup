@@ -43,8 +43,11 @@ cd frontend && npx tsc --noEmit && npm run build   # frontend
 ## Deployment
 
 Production runs on a single VM behind a Cloudflare Tunnel (no open ports), using
-`docker-compose.prod.yml`. See **[DEPLOY.md](DEPLOY.md)** for the full Oracle
-Cloud + Cloudflare walkthrough.
+`docker-compose.prod.yml`. CI builds images and pushes them to GHCR on every push to
+`main`; a pull-based systemd timer on the VM (`scripts/deploy.sh`) syncs `origin/main`
+and applies it — so deploys are just `git push`, no SSH. Production monitoring is
+**Netdata** (server + backend metrics) and **Sentry** (errors). See
+**[DEPLOY.md](DEPLOY.md)** for the full Oracle Cloud + Cloudflare walkthrough.
 
 ## Configuration
 

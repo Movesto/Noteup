@@ -23,6 +23,7 @@ services:
       DATABASE_URL: postgresql+asyncpg://${DB_USER:-amor}:${DB_PASSWORD:-changeme}@db:5432/${DB_NAME:-amor_db}
       JWT_SECRET: ${JWT_SECRET:-amor-dev-secret-change-in-production}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     ports:
       - "8000:8000"
     depends_on:
@@ -63,7 +64,7 @@ services:
     command:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.path=/prometheus
-      - --storage.tsdb.retention.time=15d
+      - --storage.tsdb.rquesetention.time=15d
       - --web.enable-lifecycle
     depends_on:
       - backend

@@ -25,3 +25,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Deploy state (written by scripts/deploy.sh on the server)
+.last_deployed

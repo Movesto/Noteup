@@ -3,12 +3,17 @@
 This runs the whole app on one small VM with Docker, exposed to your domain
 through a **Cloudflare Tunnel**. Because the tunnel dials *out* to Cloudflare,
 **you never open any inbound ports** — which neatly avoids Oracle's notoriously
-fussy firewall/security-list rules. Only the website is reachable; the database,
-backend API, and metrics stay private inside the VM.
+fussy firewall/security-list rules. Only the website is reachable; the database and
+backend API never accept inbound connections, and monitoring uses outbound-only
+agents (Netdata Cloud, Sentry) — nothing listens for inbound traffic.
 
 ```
 browser ──HTTPS──> Cloudflare ──encrypted tunnel──> cloudflared ──> frontend ──> backend ──> postgres
 ```
+
+> **Fast path:** steps 2–3 and the auto-deploy timer (step 6) are automated by
+> `scripts/server-setup.sh`. Create the VM (step 1), clone the repo, run that script,
+> then set your Cloudflare token in `.env`. The manual steps below explain what it does.
 
 ## 1. Create the VM
 
@@ -49,6 +54,8 @@ openssl rand -hex 32   # run twice, use for JWT_SECRET and SESSION_SECRET
 - `CORS_ORIGINS` – `https://notesapp.uk`
 - `CLOUDFLARE_TUNNEL_TOKEN` – from step 4
 - `UNSPLASH_ACCESS_KEY` – optional (cover images)
+- `NETDATA_CLAIM_TOKEN`, `NETDATA_CLAIM_ROOMS` – optional (Netdata Cloud monitoring; see §9)
+- `SENTRY_DSN` – optional (error monitoring; see §9)
 
 ## 4. Create the Cloudflare Tunnel
 
@@ -68,11 +75,12 @@ Cloudflare auto-creates the DNS record and handles HTTPS.
 ## 5. Launch
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-First build takes a few minutes (the backend installs Tesseract for OCR).
-Database migrations run automatically on backend startup. Check it's healthy:
+Images are pre-built in CI and pulled from GHCR (no on-VM build), so the first run
+just downloads them. Database migrations run automatically on backend startup.
+Check it's healthy:
 
 ```bash
 docker compose -f docker-compose.prod.yml ps
@@ -82,12 +90,54 @@ docker compose -f docker-compose.prod.yml logs -f cloudflared   # should say "Re
 Visit `https://notesapp.uk`. **The first account you register becomes the
 owner** — register yours immediately.
 
-## 6. Updating
+Then turn on hands-off deploys → **§6** (skip it if `scripts/server-setup.sh` already
+installed the timer, in which case this first launch was automatic too).
+
+## 6. Updating (fully automatic)
+
+Deploys are automatic and pull-based. A small **systemd timer** on the VM runs
+`scripts/deploy.sh` every ~5 minutes; the script syncs the repo to `origin/main` and
+applies it — **both code and compose changes** — using pre-built images from GHCR. No
+inbound access, no manual steps.
+
+So the whole workflow is: **edit → commit → `git push`** → live within ~5 minutes.
+
+`scripts/server-setup.sh` installs the timer for you. To add it to an **existing** VM,
+run once from the repo root:
 
 ```bash
-git pull
-docker compose -f docker-compose.prod.yml up -d --build
+chmod +x scripts/deploy.sh
+sudo tee /etc/systemd/system/noteup-deploy.service >/dev/null <<EOF
+[Unit]
+Description=Noteup pull-based deploy
+After=network-online.target docker.service
+[Service]
+Type=oneshot
+User=$USER
+WorkingDirectory=$(pwd)
+ExecStart=$(pwd)/scripts/deploy.sh
+EOF
+sudo tee /etc/systemd/system/noteup-deploy.timer >/dev/null <<'EOF'
+[Unit]
+Description=Run the Noteup deploy every 5 minutes
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=noteup-deploy.service
+[Install]
+WantedBy=timers.target
+EOF
+sudo systemctl daemon-reload && sudo systemctl enable --now noteup-deploy.timer
 ```
+
+- **Watch a deploy:** `journalctl -u noteup-deploy.service -f`
+- **Force one now:** `./scripts/deploy.sh`
+- **Rollback:** it follows `origin/main`, so `git revert <bad-sha> && git push` — the VM
+  rolls itself back on the next tick. (Images are also SHA-tagged in GHCR if you ever
+  want to pin one manually.)
+
+The only reason left to SSH in is to add a **brand-new secret** to `.env` (secrets are
+never in git); after editing it, run `./scripts/deploy.sh`.
 
 ## 7. Backups
 
@@ -114,23 +164,26 @@ Restore: `gunzip -c backup.sql.gz | docker compose -f docker-compose.prod.yml ex
 > Security headers (CSP/HSTS/etc.) are best added as Cloudflare **Transform
 > Rules → Modify Response Header** so they apply at the edge without touching app code.
 
-## 9. Monitoring performance (no load on the VM)
+## 9. Monitoring
 
-The full Prometheus/Grafana stack is too heavy for a 1 GB VM, so monitoring is done
-entirely through Cloudflare (free, zero server cost):
+Three free, lightweight layers — nothing heavy enough to strain the VM:
 
-- **Web Analytics** — real page-load times and Core Web Vitals per page, so you can see
-  *which* pages are slow for real visitors. Enable in the Cloudflare dashboard →
-  **Analytics & Logs → Web Analytics → Add a site**, and (for this proxied/tunneled site)
-  turn on **automatic setup** so Cloudflare injects the beacon for you. If automatic
-  injection isn't offered, add the one-line beacon `<script>` it shows to
-  `frontend/app/root.tsx` just before `<Scripts />` and redeploy.
-- **Errors & timeouts** — Cloudflare dashboard → **Analytics & Logs → Traffic**: watch for
-  **5xx / 524** responses. A spike in 524s means a request took longer than Cloudflare's
-  100-second edge limit (usually a heavy loader/import) — the signal that something is slow
-  server-side.
-- **Live server resources (on demand)** — when diagnosing, SSH in and run
-  `docker stats --no-stream` (per-container CPU/RAM) and `free -h` (RAM/swap). High swap
-  use means the VM is memory-starved — the cue to move to the free Ampere A1.
-ssh -i REDACTED-KEY-PATH ubuntu@REDACTED-IP
+- **Netdata — server + backend metrics.** The `netdata` service in
+  `docker-compose.prod.yml` collects per-second host and per-container CPU/RAM/IO,
+  and scrapes the backend's `/metrics` (FastAPI request rate, latency, error rate).
+  Claim it to **Netdata Cloud** by setting `NETDATA_CLAIM_TOKEN` and
+  `NETDATA_CLAIM_ROOMS` in `.env` (from Netdata Cloud → your Space → Connect Nodes);
+  the agent reaches the cloud *outbound*, so no port is exposed. Configure alerts
+  there (high CPU, swap, 5xx rate).
+- **Sentry — application errors + traces.** Set `SENTRY_DSN` in `.env` and the
+  backend reports exceptions and slow transactions with full stack context. Blank =
+  disabled.
+- **Cloudflare — real-user web vitals.** Dashboard → **Analytics & Logs → Web
+  Analytics** for real page-load times / Core Web Vitals, and → **Traffic** to watch
+  for **5xx / 524** responses (a 524 means a request exceeded Cloudflare's ~100 s edge
+  limit — usually a heavy import).
+
+For a quick ad-hoc look on the box: `docker stats --no-stream` (per-container
+CPU/RAM) and `free -h` (RAM/swap; heavy swap = memory-starved, time to size up to the
+free Ampere A1).
 

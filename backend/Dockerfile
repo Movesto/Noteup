@@ -2,7 +2,7 @@ FROM python:3.12-slim
 
 WORKDIR /app
 
-# curl: deployment health check (see terraform ECS task definition).
+# curl: backend container health check (used by the compose healthcheck).
 # tesseract-ocr + ara/eng language data: opt-in PDF OCR import path.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -19,6 +19,6 @@ COPY . .
 
 EXPOSE 8000
 
-# Default process for the image. docker-compose overrides this with --reload for
-# local dev; production (ECS) has no command override and relies on this.
+# Default process for the image. docker-compose (dev) overrides this with --reload;
+# production runs this image as-is.
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

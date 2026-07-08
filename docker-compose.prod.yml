@@ -8,7 +8,7 @@
 #
 # Usage:
 #   cp .env.prod.example .env   # then fill in real secrets
-#   docker compose -f docker-compose.prod.yml up -d --build
+#   docker compose -f docker-compose.prod.yml up -d
 #
 # See DEPLOY.md for the full Oracle + Cloudflare walkthrough.
 
@@ -29,7 +29,7 @@ services:
       retries: 10
 
   backend:
-    build: ./backend
+    image: ghcr.io/movesto/noteup-backend:latest
     restart: always
     environment:
       ENV: production
@@ -38,6 +38,8 @@ services:
       # Backend is only reached server-side by the frontend over the internal
       # network, so CORS is mostly moot; set it to your domain anyway.
       CORS_ORIGINS: ${CORS_ORIGINS:-https://notesapp.uk}
+      # Sentry error/performance monitoring — inactive when unset.
+      SENTRY_DSN: ${SENTRY_DSN:-}
     depends_on:
       db:
         condition: service_healthy
@@ -49,9 +51,7 @@ services:
       start_period: 20s
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: ghcr.io/movesto/noteup-frontend:latest
     restart: always
     environment:
       NODE_ENV: production
@@ -73,5 +73,40 @@ services:
     depends_on:
       - frontend
 
+  # Netdata — lightweight metrics/health agent. It reaches Netdata Cloud OUTBOUND,
+  # so no host port is published (keeps the zero-inbound design). It also scrapes
+  # the backend's /metrics via the Prometheus collector mounted below, so your
+  # existing FastAPI metrics show up in Netdata.
+  netdata:
+    image: netdata/netdata:latest
+    restart: always
+    hostname: noteup            # node name shown in Netdata Cloud
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor:unconfined
+    environment:
+      NETDATA_CLAIM_TOKEN: ${NETDATA_CLAIM_TOKEN:-}
+      NETDATA_CLAIM_URL: ${NETDATA_CLAIM_URL:-https://app.netdata.cloud}
+      NETDATA_CLAIM_ROOMS: ${NETDATA_CLAIM_ROOMS:-}
+    volumes:
+      - netdata_config:/etc/netdata
+      - netdata_cache:/var/cache/netdata
+      - netdata_lib:/var/lib/netdata
+      - ./monitoring/netdata/go.d/prometheus.conf:/etc/netdata/go.d/prometheus.conf:ro
+      - /etc/passwd:/host/etc/passwd:ro
+      - /etc/group:/host/etc/group:ro
+      - /etc/os-release:/host/etc/os-release:ro
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+# Auto-deploy is handled outside compose by a systemd timer that runs
+# scripts/deploy.sh (git pull + compose pull + up -d). See DEPLOY.md.
+
 volumes:
   postgres_data:
+  netdata_config:
+  netdata_cache:
+  netdata_lib:

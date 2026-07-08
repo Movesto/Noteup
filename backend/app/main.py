@@ -1,6 +1,7 @@
 import os
 from contextlib import asynccontextmanager
 
+import sentry_sdk
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from prometheus_fastapi_instrumentator import Instrumentator
@@ -46,6 +47,15 @@ async def lifespan(app: FastAPI):
     await apply_migrations()
     yield
 
+
+# Sentry — application error + performance monitoring. Inactive unless SENTRY_DSN
+# is set, so local/dev runs are unaffected. The FastAPI integration is automatic.
+if os.environ.get("SENTRY_DSN"):
+    sentry_sdk.init(
+        dsn=os.environ["SENTRY_DSN"],
+        environment=os.environ.get("ENV", "development"),
+        traces_sample_rate=0.1,
+    )
 
 app = FastAPI(title="Second Brain API", lifespan=lifespan)
 Instrumentator().instrument(app).expose(app)

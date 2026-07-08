@@ -37,15 +37,50 @@ else
   echo "    .env already exists — leaving it untouched."
 fi
 
+echo "==> Installing the auto-deploy timer (git pull + compose up on a schedule)..."
+REPO_DIR="$(pwd)"
+chmod +x "$REPO_DIR/scripts/deploy.sh"
+sudo tee /etc/systemd/system/noteup-deploy.service >/dev/null <<EOF
+[Unit]
+Description=Noteup pull-based deploy (sync main + docker compose up)
+Wants=network-online.target
+After=network-online.target docker.service
+
+[Service]
+Type=oneshot
+User=$USER
+WorkingDirectory=$REPO_DIR
+ExecStart=$REPO_DIR/scripts/deploy.sh
+EOF
+sudo tee /etc/systemd/system/noteup-deploy.timer >/dev/null <<'EOF'
+[Unit]
+Description=Run the Noteup deploy every 5 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Unit=noteup-deploy.service
+
+[Install]
+WantedBy=timers.target
+EOF
+sudo systemctl daemon-reload
+sudo systemctl enable --now noteup-deploy.timer
+echo "    Timer installed — pushes to main now deploy automatically."
+
 cat <<'NEXT'
 
-==> Done. Two steps left:
+==> Done. Almost nothing left:
 
-  1) Paste your Cloudflare tunnel token:
-       nano .env       # set CLOUDFLARE_TUNNEL_TOKEN=...  (and optional UNSPLASH_ACCESS_KEY)
+  1) Paste your secrets:
+       nano .env    # CLOUDFLARE_TUNNEL_TOKEN=...  (plus optional UNSPLASH_ACCESS_KEY,
+                    #  SENTRY_DSN, NETDATA_CLAIM_TOKEN / NETDATA_CLAIM_ROOMS)
 
-  2) Launch:
-       docker compose -f docker-compose.prod.yml up -d --build
+  2) The deploy timer brings the stack up within ~5 minutes. To go now instead:
+       ./scripts/deploy.sh
+
+  From here on, every push to main auto-deploys — no SSH needed for code or
+  compose changes (only to add a brand-new secret to .env).
 
   If docker says "permission denied", run  newgrp docker  (or log out and back in) first.
 NEXT

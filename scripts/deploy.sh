@@ -18,15 +18,21 @@ git fetch --quiet origin main
 TARGET="$(git rev-parse origin/main)"
 LAST="$(cat "$STAMP" 2>/dev/null || echo none)"
 
-if [ "$TARGET" = "$LAST" ]; then
-  exit 0   # nothing new on main
+changed=false
+if [ "$TARGET" != "$LAST" ]; then
+  echo "==> New commit $LAST -> $TARGET"
+  git reset --hard origin/main
+  "${COMPOSE[@]}" pull
+  changed=true
 fi
 
-echo "==> Deploying $LAST -> $TARGET"
-git reset --hard origin/main
-"${COMPOSE[@]}" pull
+# Always converge the running stack to the compose file. When the commit changed
+# this applies the new images; it also picks up any .env edits and restarts stopped
+# containers (self-healing). It's a no-op when nothing has changed.
 "${COMPOSE[@]}" up -d --remove-orphans
-docker image prune -f >/dev/null 2>&1 || true
 
-echo "$TARGET" > "$STAMP"   # only reached if the steps above succeeded (set -e)
-echo "==> Deployed $TARGET"
+if [ "$changed" = true ]; then
+  echo "$TARGET" > "$STAMP"   # only marked after a successful deploy (set -e)
+  docker image prune -f >/dev/null 2>&1 || true
+  echo "==> Deployed $TARGET"
+fi

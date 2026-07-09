@@ -7,7 +7,7 @@ import {
   json,
   useLoaderData,
 } from "@remix-run/react";
-import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/node";
+import type { LinksFunction, LoaderFunctionArgs, MetaFunction } from "@remix-run/node";
 import { redirect } from "@remix-run/node";
 import stylesheet from "~/tailwind.css?url";
 import { getSidebarData } from "~/lib/api/sidebar.server";
@@ -17,6 +17,11 @@ import type { Folder, SidebarNote } from "~/types";
 
 export const links: LinksFunction = () => [
   { rel: "stylesheet", href: stylesheet },
+  { rel: "icon", href: "/favicon.svg", type: "image/svg+xml" },
+];
+
+export const meta: MetaFunction = () => [
+  { title: "Second Brain" },
 ];
 
 export async function loader({ request }: LoaderFunctionArgs) {

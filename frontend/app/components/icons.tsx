@@ -63,3 +63,23 @@ export function CloseIcon({ className = "w-4 h-4" }: IconProps) {
     </svg>
   );
 }
+
+// Double chevron («) — collapses the sidebar.
+export function ChevronsLeftIcon({ className = "w-4 h-4" }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"
+         strokeWidth={2} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  );
+}
+
+// Double chevron (») — reopens the collapsed sidebar (mirror of ChevronsLeft).
+export function ChevronsRightIcon({ className = "w-4 h-4" }: IconProps) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor"
+         strokeWidth={2} aria-hidden="true">
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+    </svg>
+  );
+}

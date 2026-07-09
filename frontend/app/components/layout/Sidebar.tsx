@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { SearchBar } from "~/components/SearchBar";
 import { FolderTree, SidebarTreeProvider, type SidebarTreeValue } from "~/components/layout/SidebarTree";
 import type { Folder, SidebarNote } from "~/types";
-import { TrashIcon } from "~/components/icons";
+import { TrashIcon, ChevronsLeftIcon } from "~/components/icons";
 
 interface Props {
   notes: SidebarNote[];
@@ -12,6 +12,7 @@ interface Props {
   open: boolean;
   imeEnabled: boolean;
   onToggleIme: () => void;
+  onCollapse: () => void;
 }
 
 const NAV_LINKS = [
@@ -63,7 +64,7 @@ const NAV_LINKS = [
   },
 ];
 
-export function Sidebar({ notes, folders, email, open, imeEnabled, onToggleIme }: Props) {
+export function Sidebar({ notes, folders, email, open, imeEnabled, onToggleIme, onCollapse }: Props) {
   const navigate = useNavigate();
   const revalidator = useRevalidator();
   const folderFetcher = useFetcher();
@@ -254,21 +255,32 @@ export function Sidebar({ notes, folders, email, open, imeEnabled, onToggleIme }
     <aside
       className={`
         fixed inset-y-0 left-0 z-30 w-60 shrink-0 bg-notion-surface border-r border-notion-border flex flex-col overflow-hidden transition-transform duration-200
-        md:static md:translate-x-0
-        ${open ? "translate-x-0" : "-translate-x-full"}
+        ${open ? "translate-x-0 md:static md:translate-x-0" : "-translate-x-full md:hidden"}
       `}
     >
       {/* Header */}
       <div className="px-3 pt-3 pb-2 shrink-0">
-        <NavLink
-          to="/"
-          className="flex items-center gap-2 px-2 py-1.5 rounded-md mb-1 hover:bg-notion-hover transition-colors"
-        >
-          <div className="w-5 h-5 bg-emerald-600 rounded flex items-center justify-center text-[10px] font-bold text-white shrink-0">
-            SB
-          </div>
-          <span className="text-[13px] font-semibold text-notion-text truncate">Second Brain</span>
-        </NavLink>
+        <div className="flex items-center gap-1 mb-1">
+          <NavLink
+            to="/"
+            className="flex items-center gap-2 px-2 py-1.5 rounded-md flex-1 min-w-0 hover:bg-notion-hover transition-colors"
+          >
+            <div className="w-5 h-5 bg-accent rounded flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+              SB
+            </div>
+            <span className="text-[13px] font-semibold text-notion-text truncate">Second Brain</span>
+          </NavLink>
+
+          {/* Collapse the sidebar — a hamburger to reopen appears in the navbar. */}
+          <button
+            type="button"
+            onClick={onCollapse}
+            aria-label="Collapse sidebar"
+            className="p-1.5 rounded-md text-notion-faint hover:text-notion-text hover:bg-notion-hover transition-colors shrink-0"
+          >
+            <ChevronsLeftIcon className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* Search — sidebar placement, shown on small screens only.
             On large screens the search lives in the top navbar instead. */}

@@ -147,47 +147,28 @@ never in git); after editing it, run `./scripts/deploy.sh`.
 
 ## 7. Backups
 
-Your notes live in the `postgres_data` volume. `server-setup.sh` installs two
-**backup timers** (`scripts/backup.sh`, 03:30) that dump the database, gzip it,
-verify it isn't empty, rotate old copies, and (optionally) push off-box:
+Your notes live in the `postgres_data` volume. Backups are handled by **Oracle Cloud
+block-volume backup policies** (Console → the VM's boot/block volume → *Backups* /
+assign a backup policy such as Bronze/Silver/Gold), so the volume is snapshotted on a
+schedule with no load on the app.
 
-| Tier | When | Kept | Location |
-|------|------|------|----------|
-| **incremental** | daily except Thursday | 14 days | `~/noteup-backups/incremental` |
-| **full** | every **Thursday** | 8 weeks | `~/noteup-backups/full` |
-
-`pg_dump` produces a full logical snapshot each run, so the "incremental" tier is a
-dense, short-retention set rather than byte-level deltas. For true delta / point-in-
-time recovery you'd enable Postgres **WAL archiving** (heavier — a separate setup);
-the tiered logical dumps here are simple, portable, and easy to restore.
-
-**Push backups off the VM** — a local-only backup dies with the machine, which
-defeats the purpose. Install rclone, point it at a remote (Cloudflare R2, S3, Google
-Drive…), and set `BACKUP_REMOTE` in `.env`:
+For a portable logical dump (handy for restoring into a different database), you can
+still take one by hand at any time:
 
 ```bash
-sudo apt-get install -y rclone
-rclone config                     # create a remote, e.g. named "r2"
-# then in .env:  BACKUP_REMOTE=r2:noteup-backups
+docker compose -f docker-compose.prod.yml exec -T db \
+  pg_dump -U amor amor_db | gzip > noteup-$(date +%F).sql.gz
 ```
 
-Run one now / check the timers:
+Restore it with:
 
 ```bash
-./scripts/backup.sh incremental      # or: ./scripts/backup.sh full
-systemctl list-timers 'noteup-backup*'
-ls -lh ~/noteup-backups/full ~/noteup-backups/incremental
-```
-
-**Restore** from a dump (pick the newest full, or a specific incremental):
-
-```bash
-gunzip -c ~/noteup-backups/full/full-YYYYMMDD-HHMMSS.sql.gz \
+gunzip -c noteup-YYYY-MM-DD.sql.gz \
   | docker compose -f docker-compose.prod.yml exec -T db psql -U amor -d amor_db
 ```
 
-> Test a restore occasionally into a throwaway database — an untested backup isn't
-> a backup.
+> Whatever the mechanism, test a restore occasionally — an untested backup isn't a
+> backup.
 
 ## 8. Recommended Cloudflare hardening (dashboard)
 

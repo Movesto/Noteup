@@ -44,6 +44,25 @@ jobs:
       - name: Build
         run: npm run build
 
+  security-audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: pip-audit (backend)
+        run: |
+          pip install pip-audit
+          pip-audit -r backend/requirements.txt
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: npm audit (frontend, critical only)
+        working-directory: frontend
+        run: npm audit --audit-level=critical
+
   build-and-push:
     name: Build and push images
     needs: [backend-tests, frontend-typecheck]

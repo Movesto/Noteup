@@ -4,7 +4,7 @@ from datetime import timedelta
 from typing import Optional
 
 import bcrypt
-from jose import JWTError, jwt
+import jwt
 
 from app.models import utcnow
 
@@ -55,5 +55,5 @@ def decode_token(token: str) -> Optional[uuid.UUID]:
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         return uuid.UUID(payload["sub"])
-    except (JWTError, KeyError, ValueError):
+    except (jwt.PyJWTError, KeyError, ValueError):
         return None

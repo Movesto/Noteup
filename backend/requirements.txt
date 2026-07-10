@@ -11,7 +11,7 @@ email-validator==2.2.0
 PyJWT==2.10.1
 prometheus-fastapi-instrumentator==7.0.0
 sentry-sdk[fastapi]==2.17.0
-markdown==3.7
+markdown==3.10.2
 pypdf==5.1.0
 # PDF OCR (opt-in import path): page rendering + Tesseract bindings. The
 # Tesseract engine itself and its language data are installed in the Dockerfile.

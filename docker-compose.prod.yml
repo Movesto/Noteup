@@ -58,8 +58,17 @@ services:
       BACKEND_URL: http://backend:8000
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET must be set in .env}
       UNSPLASH_ACCESS_KEY: ${UNSPLASH_ACCESS_KEY:-}
+      SENTRY_DSN: ${SENTRY_DSN:-}
     depends_on:
       - backend
+    healthcheck:
+      # Node 20 has global fetch; no curl in the image. /auth/login returns 200
+      # without a session, so it's a clean liveness probe.
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/auth/login').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   # Cloudflare Tunnel — publishes the frontend to your domain with no open ports.
   # Create the tunnel in the Cloudflare Zero Trust dashboard, point its public

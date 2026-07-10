@@ -28,3 +28,4 @@ Thumbs.db
 
 # Deploy state (written by scripts/deploy.sh on the server)
 .last_deployed
+.deploy_hold

@@ -17,6 +17,12 @@ if ! command -v docker >/dev/null 2>&1; then
   sudo usermod -aG docker "$USER"
 fi
 
+echo "==> Installing fail2ban (blocks SSH brute-force; the VM's public IP is in git history)..."
+if ! command -v fail2ban-server >/dev/null 2>&1; then
+  sudo apt-get update -qq && sudo apt-get install -y fail2ban
+  sudo systemctl enable --now fail2ban
+fi
+
 echo "==> Adding a 2G swap file (if none)..."
 if ! sudo swapon --show | grep -q .; then
   sudo fallocate -l 2G /swapfile
@@ -67,6 +73,58 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable --now noteup-deploy.timer
 echo "    Timer installed — pushes to main now deploy automatically."
+
+echo "==> Installing the tiered database-backup timers (incremental daily + full on Thursday)..."
+chmod +x "$REPO_DIR/scripts/backup.sh"
+# Retire the old single-tier units if a previous setup installed them.
+sudo systemctl disable --now noteup-backup.timer 2>/dev/null || true
+sudo rm -f /etc/systemd/system/noteup-backup.service /etc/systemd/system/noteup-backup.timer
+
+# Templated service: %i is the mode (incremental | full).
+sudo tee /etc/systemd/system/noteup-backup@.service >/dev/null <<EOF
+[Unit]
+Description=Noteup %i database backup (pg_dump + rotate + optional off-box copy)
+After=docker.service
+
+[Service]
+Type=oneshot
+User=$USER
+WorkingDirectory=$REPO_DIR
+ExecStart=$REPO_DIR/scripts/backup.sh %i
+EOF
+
+# Incremental: dense, short-retention — every day except Thursday.
+sudo tee /etc/systemd/system/noteup-backup-incremental.timer >/dev/null <<'EOF'
+[Unit]
+Description=Noteup incremental backup (Sun-Wed, Fri-Sat)
+
+[Timer]
+OnCalendar=Sun,Mon,Tue,Wed,Fri,Sat *-*-* 03:30:00
+Persistent=true
+Unit=noteup-backup@incremental.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+# Full: weekly long-retention — every Thursday.
+sudo tee /etc/systemd/system/noteup-backup-full.timer >/dev/null <<'EOF'
+[Unit]
+Description=Noteup full backup (every Thursday)
+
+[Timer]
+OnCalendar=Thu *-*-* 03:30:00
+Persistent=true
+Unit=noteup-backup@full.service
+
+[Install]
+WantedBy=timers.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now noteup-backup-incremental.timer noteup-backup-full.timer
+echo "    Backup timers installed — incremental daily, full on Thursday."
+echo "    Run now: ./scripts/backup.sh incremental   (or: ./scripts/backup.sh full)"
 
 cat <<'NEXT'
 
